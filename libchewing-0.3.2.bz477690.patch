@@ -1,0 +1,50 @@
+diff -up ./data/Makefile.am.bz477690 ./data/Makefile.am
+--- ./data/Makefile.am.bz477690	2008-12-02 00:29:20.000000000 +1000
++++ ./data/Makefile.am	2009-05-20 14:24:31.000000000 +1000
+@@ -9,8 +9,11 @@ datas = \
+ 	us_freq.dat \
+ 	dict.dat \
+ 	ph_index.dat \
+-	fonetree.dat \
+ 	$(chindexs)
++
++datas_lib = \
++	fonetree.dat
++
+ generated_header = $(top_builddir)/src/chewing-definition.h
+ 
+ all: checkdata_stamp gendata_stamp
+@@ -37,4 +40,8 @@ install-data-local: $(datas) pinyin.tab 
+ 	$(mkinstalldirs) $(DESTDIR)/$(datadir)/chewing
+ 	$(INSTALL_DATA) $(datas) pinyin.tab swkb.dat symbols.dat \
+ 		$(DESTDIR)/$(datadir)/chewing
+-CLEANFILES = $(datas) gendata_stamp checkdata_stamp $(generated_header)
++	$(mkinstalldirs) $(DESTDIR)/$(libdir)/chewing
++	$(INSTALL_DATA) $(datas_lib) \
++	    $(DESTDIR)/$(libdir)/chewing
++
++CLEANFILES = $(datas) $(datas_lib) gendata_stamp checkdata_stamp $(generated_header)
+diff -up ./src/Makefile.am.bz477690 ./src/Makefile.am
+--- ./src/Makefile.am.bz477690	2008-12-02 00:29:20.000000000 +1000
++++ ./src/Makefile.am	2009-05-20 14:24:31.000000000 +1000
+@@ -3,6 +3,7 @@ INCLUDES = \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/include/internal \
+ 	-I$(top_srcdir)/src/porting_layer/include \
++	-DLIBINSTDIR=\"$(libdir)\"\
+ 	-DCHEWING_DATADIR=\"$(datadir)/chewing\"
+ 
+ lib_LTLIBRARIES = libchewing.la
+diff -up ./src/tree.c.bz477690 ./src/tree.c
+--- ./src/tree.c.bz477690	2008-12-02 00:29:20.000000000 +1000
++++ ./src/tree.c	2009-05-20 14:24:31.000000000 +1000
+@@ -114,7 +114,8 @@ void InitTree( const char *prefix )
+ 	int i;
+ #endif
+ 
+-	sprintf( filename, "%s" PLAT_SEPARATOR "%s", prefix, PHONE_TREE_FILE );
++	sprintf( filename, "%s" PLAT_SEPARATOR "chewing" PLAT_SEPARATOR "%s", 
++	LIBINSTDIR, PHONE_TREE_FILE );
+ #ifdef USE_BINARY_DATA
+ 	plat_mmap_set_invalid( &tree_mmap );
+ 	tree_size = plat_mmap_create( &tree_mmap, filename, FLAG_ATTRIBUTE_READ );

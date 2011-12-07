@@ -1,0 +1,212 @@
+diff -up ./src/chewingio.c.hsu ./src/chewingio.c
+--- ./src/chewingio.c.hsu	2010-02-10 14:01:42.000000000 +1000
++++ ./src/chewingio.c	2010-02-10 14:01:42.000000000 +1000
+@@ -1053,7 +1053,7 @@ static int dvorak_convert( int key )
+ 		';',':','q','Q','j','J','k','K','x','X','b','B','m','M',
+ 		'w','W','v','V','z','Z'};
+ 	char qkey[] = {
+-		'Q','q','w','W','e','E','r','R','t','T','y','Y','u','U',
++		'q','Q','w','W','e','E','r','R','t','T','y','Y','u','U',
+ 		'i','I','o','O','p','P','[','{',']','}','\\','|',
+ 		'a','A','s','S','d','D','f','F','g','G','h','H','j','J',
+ 		'k','K','l','L',';',':','\'','\"',
+diff -up ./src/choice.c.hsu ./src/choice.c
+--- ./src/choice.c.hsu	2010-02-10 14:01:42.000000000 +1000
++++ ./src/choice.c	2010-02-10 16:12:04.000000000 +1000
+@@ -29,6 +29,7 @@
+ #include "tree-private.h"
+ #include "userphrase-private.h"
+ #include "private.h"
++#include "zuin-private.h"
+ 
+ #define CEIL_DIV( a, b ) 	( ( a + b - 1 ) / b )
+ 
+@@ -151,6 +152,23 @@ static int ChoiceTheSame( ChoiceInfo *pc
+ 	return 0;
+ }
+ 
++static void ChoiceInfoAppendChi(
++		ChoiceInfo *pci, uint16 phone )
++{
++	Word tempWord;
++	GetCharFirst( &tempWord, phone );
++	do {
++		if ( ChoiceTheSame( pci, tempWord.word, ueBytesFromChar( tempWord.word[0] ) * sizeof( char ) ) ) 
++			continue;
++		memcpy( 
++			pci->totalChoiceStr[ pci->nTotalChoice ],
++			tempWord.word, ueBytesFromChar( tempWord.word[0] ) * sizeof( char ) );
++		assert(pci->nTotalChoice <= MAX_CHOICE);
++		pci->totalChoiceStr[ pci->nTotalChoice ][ ueBytesFromChar( tempWord.word[0] ) ] = '\0';
++		pci->nTotalChoice++;
++	} while( GetCharNext( &tempWord ) );
++}
++
+ /** @brief Loading all possible phrases of certain length.
+  *
+  *	   Loading all possible phrases of certain length into ChoiceInfo structure from static
+@@ -158,10 +176,10 @@ static int ChoiceTheSame( ChoiceInfo *pc
+  *	   including number of total pages and the number of current page.\n
+  */
+ static void SetChoiceInfo(
++		ChewingData *pgdata,
+ 		ChoiceInfo *pci,AvailInfo *pai, uint16 *phoneSeq, int cursor,
+ 		int candPerPage )
+ {
+-	Word tempWord;
+ 	Phrase tempPhrase;
+ 	int len;
+ 	UserPhraseData *pUserPhraseData;
+@@ -176,17 +194,57 @@ static void SetChoiceInfo(
+ 
+ 	/* secondly, read tree phrase */
+ 	if ( len == 1 ) { /* single character */
+-		GetCharFirst( &tempWord, phoneSeq[ cursor ] );
+-		do {
+-			if ( ChoiceTheSame( pci, tempWord.word, ueBytesFromChar( tempWord.word[0] ) * sizeof( char ) ) ) 
+-				continue;
+-			memcpy( 
+-				pci->totalChoiceStr[ pci->nTotalChoice ],
+-				tempWord.word, ueBytesFromChar( tempWord.word[0] ) * sizeof( char ) );
+-			assert(pci->nTotalChoice <= MAX_CHOICE);
+-			pci->totalChoiceStr[ pci->nTotalChoice ][ ueBytesFromChar( tempWord.word[0] ) ] = '\0';
+-			pci->nTotalChoice++;
+-		} while( GetCharNext( &tempWord ) );
++		ChoiceInfoAppendChi( pci, phoneSeq[cursor] );
++		if (pgdata->zuinData.kbtype == KB_HSU || pgdata->zuinData.kbtype == KB_DVORAK_HSU ){
++			switch(phoneSeq[ cursor ]){
++				case 0x2800: // 'ㄘ'
++					ChoiceInfoAppendChi( pci, 0x30 );  // 'ㄟ'
++					break;
++				case 0x80: // 'ㄧ'
++					ChoiceInfoAppendChi( pci, 0x20 );  // 'ㄝ'
++					break;
++				case 0x2A00: // 'ㄙ'
++					ChoiceInfoAppendChi( pci, 0x1 );  // '˙'
++					break;
++				case 0xA00: // 'ㄉ'
++					ChoiceInfoAppendChi( pci, 0x2 );  // 'ˊ'
++					break;
++				case 0x800: // 'ㄈ'
++					ChoiceInfoAppendChi( pci, 0x3 );  // 'ˇ'
++					break;
++				case 0x18: // 'ㄜ'
++					ChoiceInfoAppendChi( pci, 0x1200 );  // 'ㄍ'
++					break;
++				case 0x10: // 'ㄛ'
++					ChoiceInfoAppendChi( pci, 0x1600 );  // 'ㄏ'
++					break;
++				case 0x1E00: // 'ㄓ'
++					ChoiceInfoAppendChi( pci, 0x1800 );  // 'ㄐ'
++					ChoiceInfoAppendChi( pci, 0x4 );  // 'ˋ'
++					break;
++				case 0x58: // 'ㄤ'
++					ChoiceInfoAppendChi( pci, 0x1400 );  // 'ㄎ'
++					break;
++				case 0x68: // 'ㄦ'
++					ChoiceInfoAppendChi( pci, 0x1000 );  // 'ㄌ'
++					ChoiceInfoAppendChi( pci, 0x60 );  // 'ㄥ'
++					break;
++				case 0x2200: // 'ㄕ'
++					ChoiceInfoAppendChi( pci, 0x1C00 );  // 'ㄒ'
++					break;
++				case 0x2000: // 'ㄔ'
++					ChoiceInfoAppendChi( pci, 0x1A00 );  // 'ㄑ'
++					break;
++				case 0x50: // 'ㄣ'
++					ChoiceInfoAppendChi( pci, 0xE00 );  // 'ㄋ'
++					break;
++				case 0x48: // 'ㄢ'
++					ChoiceInfoAppendChi( pci, 0x600 );  // 'ㄇ'
++					break;
++				default:
++					break;
++			}
++		}
+ 	}
+ 	/* phrase */
+ 	else {
+@@ -281,6 +339,7 @@ int ChoiceFirstAvail( ChewingData *pgdat
+ 
+ 	pgdata->availInfo.currentAvail = pgdata->availInfo.nAvail - 1;
+ 	SetChoiceInfo(
++		pgdata,
+ 		&( pgdata->choiceInfo ),
+ 		&( pgdata->availInfo ),
+ 		pgdata->phoneSeq,
+@@ -289,12 +348,14 @@ int ChoiceFirstAvail( ChewingData *pgdat
+ 	return 0;
+ }
+ 
+-int ChoicePrevAvail( ChewingData *pgdata )
++int ChoicePrevAvail( ChewingContext *ctx )
+ {
++	ChewingData *pgdata=ctx->data;
+ 	if (pgdata->choiceInfo.isSymbol) return 0;
+ 	if ( ++( pgdata->availInfo.currentAvail ) >= pgdata->availInfo.nAvail )
+ 		pgdata->availInfo.currentAvail = 0;
+ 	SetChoiceInfo( 
++		pgdata,
+ 		&( pgdata->choiceInfo ), 
+ 		&( pgdata->availInfo ), 
+ 		pgdata->phoneSeq, 
+@@ -310,6 +371,7 @@ int ChoiceNextAvail( ChewingData *pgdata
+ 	if ( --( pgdata->availInfo.currentAvail ) < 0 )
+ 		pgdata->availInfo.currentAvail = pgdata->availInfo.nAvail - 1;
+ 	SetChoiceInfo(
++		pgdata,
+ 		&( pgdata->choiceInfo ), 
+ 		&( pgdata->availInfo ), 
+ 		pgdata->phoneSeq,
+diff -up ./src/common/key2pho.c.hsu ./src/common/key2pho.c
+--- ./src/common/key2pho.c.hsu	2008-12-02 00:29:20.000000000 +1000
++++ ./src/common/key2pho.c	2010-02-10 14:01:42.000000000 +1000
+@@ -81,7 +81,7 @@ static char *key_str[ MAX_KBTYPE ] = {
+ 	 "bpmfdtnlvkhg7c,./j;'sexuaorwiqzy890-=1234",		/* ET  */
+ 	 "bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhdfjk",		/* ET26 */
+ 	 "1'a;2,oq.ejpuk5yixfdbghm8ctw9rnv0lsz[7634",		/* Dvorak */
+-	 "bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldhtn",		/* Dvorak Hsu */
++	 "bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnkllsdfj",		/* Dvorak Hsu */
+ 	 "qqazwwsxedcrfvttgbyhnujmuikbiolmoplnpyerd",		/* DACHEN-CP26 */
+ 	 "1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/-7634",		/* pinyin */
+ } ;
+diff -up ./src/zuin.c.hsu ./src/zuin.c
+--- ./src/zuin.c.hsu	2008-12-02 00:29:20.000000000 +1000
++++ ./src/zuin.c	2010-02-10 14:01:42.000000000 +1000
+@@ -31,20 +31,6 @@
+ #include "hanyupinyin-private.h"
+ #include "private.h"
+ 
+-static int IsDvorakHsuPhoEndKey( int pho_inx[], int key )
+-{
+-	switch ( key ) {
+-		case 'd':
+-		case 'h':
+-		case 't':
+-		case 'n':
+-		case ' ':
+-			return ( pho_inx[ 0 ] || pho_inx[ 1 ] || pho_inx[ 2 ] );
+-		default:
+-			return 0;
+-	}
+-}
+-
+ /*
+  * process a key input
+  * return value:
+@@ -67,6 +53,15 @@ static int IsHsuPhoEndKey( int pho_inx[]
+ 	}
+ }
+ 
++static int IsDvorakHsuPhoEndKey( int pho_inx[], int key )
++{
++	/* DvorakHsu tone mark should be same with Hsu's mark 
++           After conversion. */
++	return IsHsuPhoEndKey(pho_inx, key);
++}
++
++
++
+ /* copy the idea from HSU keyboard */
+ static int IsET26PhoEndKey( int pho_inx[], int key )
+ {

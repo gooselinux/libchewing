@@ -1,0 +1,29 @@
+diff -up ./src/zuin.c.hsu ./src/zuin.c
+--- ./src/zuin.c.hsu	2008-12-02 00:29:20.000000000 +1000
++++ ./src/zuin.c	2010-03-04 16:43:23.000000000 +1000
+@@ -183,11 +178,8 @@ static int HsuPhoInput( ZuinData *pZuin,
+ {
+ 	int type = 0, searchTimes = 0, inx = 0;
+ 
+-	if ( 
+-		( IsHsuPhoEndKey( pZuin->pho_inx, key ) && 
+-			( pZuin->kbtype == KB_HSU ) ) ||
+-		( IsDvorakHsuPhoEndKey( pZuin->pho_inx, key ) && 
+-			( pZuin->kbtype == KB_DVORAK_HSU ) ) ) {
++		/* Dvorak Hsu key has already converted to Hsu */
++	if ( IsHsuPhoEndKey( pZuin->pho_inx, key )){
+ 		if ( pZuin->pho_inx[ 1 ] == 0 && pZuin->pho_inx[ 2 ] == 0 ) {
+ 			/* convert "ㄐㄑㄒ" to "ㄓㄔㄕ" */
+ 			if ( 12 <= pZuin->pho_inx[ 0 ] && pZuin->pho_inx[ 0 ] <= 14 ) {
+@@ -232,10 +224,7 @@ static int HsuPhoInput( ZuinData *pZuin,
+ 			pZuin->pho_inx[ 0 ] = 12;
+ 		}
+ 
+-		if ( pZuin->kbtype == KB_HSU )
+-			searchTimes = ( key == 'j' ) ? 3 : 2;
+-		else if ( pZuin->kbtype == KB_DVORAK_HSU )
+-			searchTimes = ( key == 'h' || key == 'n' ) ? 3 : 2 ;
++		searchTimes = ( key == 'j' ) ? 3 : 2;
+ 
+ 		return EndKeyProcess( pZuin, key, searchTimes );
+ 	}
